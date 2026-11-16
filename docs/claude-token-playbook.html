@@ -1,0 +1,859 @@
+<title>Claude Token Playbook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column, sticky three-way nav, tips as label/body rows separated by hairlines. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #18212b;
+  --muted: #566373;
+  --line: #d5dbe2;
+  --accent: #0b6470;
+  --accent-soft: #dceff1;
+  --save: #17734a;
+  --spend: #b4470f;
+  --code-bg: #e8ecf0;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1418; --surface: #161d23; --ink: #e4e9ee; --muted: #98a5b2; --line: #28323c;
+    --accent: #62c4cf; --accent-soft: #12303a; --save: #6ecf9b; --spend: #f0a070; --code-bg: #1c252d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1418; --surface: #161d23; --ink: #e4e9ee; --muted: #98a5b2; --line: #28323c;
+  --accent: #62c4cf; --accent-soft: #12303a; --save: #6ecf9b; --spend: #f0a070; --code-bg: #1c252d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bg);
+}
+.wrap {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code, kbd, pre { font-family: var(--font-mono); font-size: 0.875em; }
+code, kbd { background: var(--code-bg); padding: 0.08em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+pre { background: var(--code-bg); padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto; line-height: 1.5; margin: 0; }
+pre code { background: none; padding: 0; overflow-wrap: normal; }
+
+/* Header */
+header.top { padding-block: 2.5rem 1.5rem; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 0.75rem;
+}
+h1 {
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(2.1rem, 6vw, 3.4rem);
+  line-height: 1.02; letter-spacing: -0.02em; margin: 0 0 1rem; text-wrap: balance;
+}
+.lede { font-size: 1.125rem; max-width: 40rem; margin: 0; color: var(--ink); }
+
+/* The one rule */
+.rule {
+  display: grid; gap: 1.25rem 2rem; grid-template-columns: minmax(0, 1fr);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 1.25rem; margin-block: 1.5rem 0;
+}
+@media (min-width: 720px) { .rule { grid-template-columns: minmax(0, 1fr) minmax(0, 17rem); align-items: center; } }
+.rule h2 { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.15; margin: 0 0 0.5rem; text-wrap: balance; }
+.rule p { margin: 0 0 0.6rem; }
+.turns { display: grid; gap: 5px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.turn { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr); align-items: center; gap: 0.5rem; }
+.blocks { display: flex; gap: 3px; }
+.blocks i { display: block; width: 1.45rem; height: 0.95rem; border-radius: 2px; background: var(--line); }
+.blocks i.new { background: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend i { width: 0.8rem; height: 0.6rem; border-radius: 2px; background: var(--line); display: inline-block; }
+.legend i.new { background: var(--accent); }
+
+/* Sticky nav */
+nav.jump {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line); margin-top: 1.75rem;
+}
+nav.jump .wrap { display: flex; gap: 0.25rem 1.25rem; flex-wrap: wrap; padding-block: 0.6rem; }
+nav.jump a {
+  font-family: var(--font-display); font-weight: 500; font-size: 1rem; text-decoration: none; color: var(--ink);
+  padding: 0.15rem 0; border-bottom: 2px solid transparent;
+}
+nav.jump a:hover { border-bottom-color: var(--accent); }
+nav.jump a small { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); margin-left: 0.3rem; }
+
+/* Sections */
+section.part { padding-block: 2.75rem 0.5rem; }
+.part > .eyebrow { color: var(--accent); }
+.part h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.7rem, 4.5vw, 2.3rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 0.6rem; text-wrap: balance; }
+.part .intro { max-width: 40rem; margin: 0 0 1.5rem; font-size: 1.0625rem; }
+.part h3.group {
+  font-family: var(--font-mono); font-weight: 500; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin: 2.25rem 0 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--ink);
+}
+
+/* Tips */
+ul.tips { list-style: none; margin: 0; padding: 0; }
+ul.tips > li {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem 1.75rem;
+  padding-block: 1rem; border-bottom: 1px solid var(--line);
+}
+@media (min-width: 720px) { ul.tips > li { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); } }
+.tips h4 { font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; line-height: 1.25; margin: 0; text-wrap: balance; }
+.tips .body { min-width: 0; max-width: 36rem; }
+.tips .body p { margin: 0; }
+.tips .body p + p { margin-top: 0.45rem; }
+.proof { font-size: 0.875rem; color: var(--muted); }
+.proof q { font-style: italic; quotes: "\201C" "\201D"; }
+.proof a { white-space: nowrap; }
+.save { color: var(--save); font-weight: 600; }
+.spend { color: var(--spend); font-weight: 600; }
+
+/* Tables */
+.scroll { overflow-x: auto; margin-block: 1rem 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code { white-space: nowrap; }
+caption { caption-side: bottom; text-align: left; padding: 0.55rem 0.8rem; font-size: 0.8125rem; color: var(--muted); border-top: 1px solid var(--line); }
+
+/* Myths */
+ul.myths { list-style: none; margin: 0; padding: 0; }
+ul.myths li { padding-block: 0.8rem; border-bottom: 1px solid var(--line); max-width: 44rem; }
+ul.myths s { color: var(--muted); text-decoration-thickness: 1px; }
+ul.myths .fix { display: block; margin-top: 0.15rem; }
+
+/* Footer */
+footer.end { margin-top: 3rem; padding-block: 1.75rem 3rem; border-top: 1px solid var(--ink); font-size: 0.9375rem; }
+footer.end h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 0.5rem; }
+footer.end p, footer.end li { max-width: 44rem; color: var(--muted); }
+footer.end ul { padding-left: 1.1rem; margin: 0.4rem 0 1rem; }
+footer.end li { margin-bottom: 0.25rem; }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <p class="eyebrow">Checked against live Anthropic pages on 16 Nov 2026</p>
+  <h1>Claude Token Playbook</h1>
+  <p class="lede">How to get more out of Claude while spending less of your limit. Told three ways: for a newcomer, from a friend, and for a developer. Every tip carries a quote and a link to the page that backs it.</p>
+
+  <div class="rule">
+    <div>
+      <h2>The one thing to understand first</h2>
+      <p>Claude has no memory between messages. Each time you hit send, the whole conversation is sent again and read again. A long chat makes every new message expensive, even a one-liner.</p>
+      <p class="proof"><q>Every previous message is resent on every turn, so a session that has wandered through three unrelated problems pays for all three on each new message.</q> <a href="https://support.claude.com/en/articles/14552983-models-usage-and-limits-in-claude-code">Help Center</a></p>
+    </div>
+    <div aria-label="Diagram: six turns of a chat. Turn 1 processes one block, turn 6 processes six. Six messages, twenty-one blocks processed in total.">
+      <div class="turns">
+        <div class="turn"><span>Turn 1</span><span class="blocks"><i class="new"></i></span></div>
+        <div class="turn"><span>Turn 2</span><span class="blocks"><i></i><i class="new"></i></span></div>
+        <div class="turn"><span>Turn 3</span><span class="blocks"><i></i><i></i><i class="new"></i></span></div>
+        <div class="turn"><span>Turn 4</span><span class="blocks"><i></i><i></i><i></i><i class="new"></i></span></div>
+        <div class="turn"><span>Turn 5</span><span class="blocks"><i></i><i></i><i></i><i></i><i class="new"></i></span></div>
+        <div class="turn"><span>Turn 6</span><span class="blocks"><i></i><i></i><i></i><i></i><i></i><i class="new"></i></span></div>
+      </div>
+      <div class="legend"><span><i class="new"></i>new this turn</span><span><i></i>re-read (cheaper if cached, never free)</span></div>
+      <p class="proof" style="margin:0.6rem 0 0">Equal-sized turns: 6 messages, 21 blocks read.</p>
+    </div>
+  </div>
+</header>
+</div>
+
+<nav class="jump" aria-label="Sections">
+  <div class="wrap">
+    <a href="#newbie">New to Claude<small>basics</small></a>
+    <a href="#friend">From a friend<small>habits</small></a>
+    <a href="#developer">For developers<small>API + CLI</small></a>
+    <a href="#myths">Myths<small>skip these</small></a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ 1. NEWBIE ============ -->
+<section class="part" id="newbie">
+  <p class="eyebrow">Start here</p>
+  <h2>New to Claude</h2>
+  <p class="intro">Claude counts everything in <strong>tokens</strong>: small pieces of text. 200,000 tokens is about 500 pages. Your plan gives you a token allowance, and everything Claude reads or writes uses some of it. These twelve habits make that allowance last.</p>
+
+  <ul class="tips">
+    <li>
+      <h4>Know your two meters</h4>
+      <div class="body">
+        <p>Paid plans have a limit that resets every five hours and another that resets weekly. Chat, the desktop app and Claude Code all draw from the same pot. See what is left in <strong>Settings &rarr; Usage</strong>.</p>
+        <p class="proof"><q>Paid plans have two types of usage limits: a session limit that resets every five hours, and weekly limits that reset once every week.</q> <a href="https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>New topic, new chat</h4>
+      <div class="body">
+        <p>Done with one subject? Open a fresh chat. Otherwise Claude keeps re-reading the old one with every message.</p>
+        <p class="proof"><q>Begin fresh chats for new topics to minimize the size of your context window.</q> <a href="https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Ask everything in one message</h4>
+      <div class="body">
+        <p>Three related questions in one message cost less than three separate messages, because the conversation is only re-read once.</p>
+        <p class="proof"><q>If you have multiple related tasks or questions, group them in a single message.</q> <a href="https://support.claude.com/en/articles/9797557-usage-limit-best-practices">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Say exactly what you want</h4>
+      <div class="body">
+        <p>Include the goal, who it is for, the format and the length. A clear first message saves the follow-ups that fix a vague one.</p>
+        <p class="proof"><q>Think of Claude as a brilliant but new employee who lacks context on your norms and workflows. The more precisely you explain what you want, the better the result.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices">Prompting guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Document first, question last</h4>
+      <div class="body">
+        <p>When you paste something long, put it at the top and your question underneath.</p>
+        <p class="proof"><q>Queries at the end can improve response quality by up to 30 percent in tests</q> <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices">Prompting guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Put files you reuse in a Project</h4>
+      <div class="body">
+        <p>Upload a file to a Project once instead of attaching it to every chat. Reused Project content is cached and counts less. Free accounts get five Projects.</p>
+        <p class="proof"><q>Content in projects is cached and counts less against your limits when reused.</q> <a href="https://support.claude.com/en/articles/9797557-usage-limit-best-practices">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Use the lightest model that does the job</h4>
+      <div class="body">
+        <p>Click the model name to switch. Haiku is the cheapest and fastest, Sonnet handles most things, Opus and Fable are for hard problems and use your limit faster.</p>
+        <p class="proof"><q>Use our most efficient Haiku model, or the most recent Sonnet model for most tasks.</q> <a href="https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Turn the effort dial down for easy tasks</h4>
+      <div class="body">
+        <p>Effort controls how hard Claude thinks before answering. Simple questions do not need it high.</p>
+        <p class="proof"><q>Low and Medium work well for routine tasks and stretch your usage further.</q> <a href="https://support.claude.com/en/articles/8664678-change-the-model-effort-and-thinking-settings">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Switch off what you are not using</h4>
+      <div class="body">
+        <p>Web search, connected apps and Research all add tokens. Turn them off for chats that do not need them. Research in particular reads many sources per question.</p>
+        <p class="proof"><q>Tools and connectors are token-intensive</q> <a href="https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work">Help Center</a> &middot; <q>research sessions can use up your limits faster</q> <a href="https://support.claude.com/en/articles/11088861-use-research-on-claude">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Go easy on big PDFs and images</h4>
+      <div class="body">
+        <p>Claude reads each PDF page as text plus a picture of the page. Upload only the pages you need, or paste the text.</p>
+        <p class="proof"><q>Each page typically uses 1,500&ndash;3,000 tokens depending on content density.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/pdf-support">API docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Tell Claude once, not every time</h4>
+      <div class="body">
+        <p>Put standing preferences in <strong>Settings &rarr; Your Claude</strong>. Say &ldquo;remember this&rdquo; for facts you want kept. Memory is on by default, including on Free.</p>
+        <p class="proof"><q>Any instructions you add here will be applied to all of your conversations with Claude.</q> <a href="https://support.claude.com/en/articles/10185728-understanding-claude-s-personalization-features">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Ask for a short answer when that is all you need</h4>
+      <div class="body">
+        <p>Writing costs more than reading. &ldquo;Answer in two sentences&rdquo; or &ldquo;just the command&rdquo; is a real saving.</p>
+        <p class="proof"><q>Telling Claude when you only need a quick answer, not a file or finished deliverable.</q> <a href="https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork">Help Center</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">What each plan gives you</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Plan</th><th>Price</th><th>Usage</th><th>Models</th></tr></thead>
+      <tbody>
+        <tr><td>Free</td><td class="num">$0</td><td>Limited, every 5 hours and every week</td><td>Sonnet, Haiku</td></tr>
+        <tr><td>Pro</td><td class="num">$20/mo</td><td>Baseline (1&times;)</td><td>Adds Opus. Fable only with paid usage credits</td></tr>
+        <tr><td>Max</td><td class="num">$100/mo</td><td>5&times; Pro</td><td>Fable for up to 50% of the weekly limit</td></tr>
+        <tr><td>Ultra</td><td class="num">$200/mo</td><td>10&times; Pro weekly</td><td>Same as Max</td></tr>
+      </tbody>
+      <caption>Anthropic publishes no message counts, only these ratios. Sources: <a href="https://claude.com/pricing">pricing</a>, <a href="https://support.claude.com/en/articles/11049741-what-is-the-max-plan">Max</a>, <a href="https://support.claude.com/en/articles/17728952-what-is-the-ultra-plan">Ultra</a>, <a href="https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan">Fable on your plan</a>.</caption>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 2. FRIEND ============ -->
+<section class="part" id="friend">
+  <p class="eyebrow">Day to day</p>
+  <h2>From a friend who uses it all day</h2>
+  <p class="intro">Okay, real talk. Almost all of it comes down to two things: keep the conversation short, and stop fiddling with settings halfway through a task. Here is what that looks like in practice.</p>
+
+  <h3 class="group">In the app</h3>
+  <ul class="tips">
+    <li>
+      <h4>Do not make Fable your daily driver</h4>
+      <div class="body">
+        <p>It is the smartest one and it eats your limit fastest. On Pro it is not even in the plan, you pay extra. Opus 5.5 or Sonnet 5.5 for normal days, Fable when you are properly stuck.</p>
+        <p class="proof"><q>They draw from your plan's regular weekly usage limits and use them faster than other Claude models.</q> <a href="https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Coming back after a break costs extra</h4>
+      <div class="body">
+        <p>That nice Project discount wears off when you leave. Batch your questions about a document into one sitting.</p>
+        <p class="proof"><q>If you come back to a project after a long break, your first message counts that content in full again.</q> <a href="https://support.claude.com/en/articles/9797557-usage-limit-best-practices">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Pasting a link is not free</h4>
+      <div class="body">
+        <p>Claude pulls in the whole page, not the paragraph you care about. Paste the paragraph.</p>
+        <p class="proof"><q>the entire article is retrieved into Claude's context window. This can consume a significant portion of your usage limit</q> <a href="https://support.claude.com/en/articles/10684626-enable-and-use-web-search">Help Center</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Save the heavy stuff for a fresh window</h4>
+      <div class="body">
+        <p>Big file builds, Research runs, long agent tasks: start them when your five-hour window has just reset, not when you are at 80%.</p>
+        <p class="proof"><q>plan intensive work sessions around your five-hour usage windows.</q> <a href="https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans">Help Center</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">In Claude Code</h3>
+  <ul class="tips">
+    <li>
+      <h4><code>/clear</code> is free. <code>/compact</code> is not.</h4>
+      <div class="body">
+        <p>Switching tasks? <code>/clear</code>. Only compact when you need the history to carry on. Run <code>/rename</code> first if you might want the old session back with <code>/resume</code>.</p>
+        <p class="proof"><q>/compact reads the conversation it summarizes, so compacting a large context is itself a large request. When you want a fresh start instead of continuity, /clear costs nothing</q> <a href="https://code.claude.com/docs/en/costs#why-usage-climbs-in-a-long-session">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Pick model and effort once, at the start</h4>
+      <div class="body">
+        <p>Changing model mid-session throws away the discount on everything Claude has already read. Same when you flip fast mode on or off.</p>
+        <p class="proof"><q>Switching with /model means the next request reads the entire conversation history with no cache hits, even though the content is identical.</q> <a href="https://code.claude.com/docs/en/prompt-caching#switching-models">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Lunch breaks have a price</h4>
+      <div class="body">
+        <p>The discount on re-read history expires after an hour on a subscription, and after five minutes on an API key or once you are on paid credits. Finish the thought before you leave, or <code>/clear</code> when you return.</p>
+        <p class="proof"><q>your first message after a break longer than the cache lifetime misses the cache and reprocesses your full context</q> <a href="https://code.claude.com/docs/en/costs#why-usage-climbs-in-a-long-session">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Wrong turn? Rewind, do not compact</h4>
+      <div class="body">
+        <p>Press <kbd>Esc</kbd> to stop it the moment it drifts. <kbd>Esc</kbd> <kbd>Esc</kbd> opens rewind, which drops the bad detour and lands you back on history that is still discounted.</p>
+        <p class="proof"><q>Rewinding truncates back to a prefix that is already cached, rather than building a new one as compaction does.</q> <a href="https://code.claude.com/docs/en/prompt-caching#compacting-the-conversation">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Two strikes, then start over</h4>
+      <div class="body">
+        <p>If you have corrected it twice and it is still wrong, a third correction just makes the chat longer. Clear and write the prompt you now know you needed.</p>
+        <p class="proof"><q>after two failed corrections run /clear and write a better prompt instead of a third.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Ask it where the tokens went</h4>
+      <div class="body">
+        <p><code>/usage</code> shows which skills, subagents and MCP servers are eating your plan and suggests fixes; press <kbd>f</kbd> to apply the ones it can. <code>/context</code> shows what is filling the window right now.</p>
+        <p class="proof">Example row from the docs: <q>25%  Trim ~/code/api/CLAUDE.md &middot; 49k tokens per request</q> <a href="https://code.claude.com/docs/en/costs#plan-usage-breakdown">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Keep CLAUDE.md short</h4>
+      <div class="body">
+        <p>It rides along on every single request. Under 200 lines, only things Claude cannot work out from the repo. Long how-tos go in a skill, which loads only when used.</p>
+        <p class="proof"><q>target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence.</q> <a href="https://code.claude.com/docs/en/memory#write-effective-instructions">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Point at the file</h4>
+      <div class="body">
+        <p>&ldquo;Improve this codebase&rdquo; makes it read everything. Name the function and the file and it reads one thing.</p>
+        <p class="proof"><q>Specific requests like "add input validation to the login function in auth.ts" let Claude work efficiently with minimal file reads.</q> <a href="https://code.claude.com/docs/en/costs#write-specific-prompts">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Plan first, and give it a test to pass</h4>
+      <div class="body">
+        <p><kbd>Shift</kbd>+<kbd>Tab</kbd> into plan mode for anything non-trivial, so you catch a wrong approach before it is built. Then hand it a test or a screenshot so it can check its own work instead of you re-prompting.</p>
+        <p class="proof"><q>Claude explores the codebase and proposes an approach for your approval, preventing expensive re-work when the initial direction is wrong.</q> <a href="https://code.claude.com/docs/en/costs#work-efficiently-on-complex-tasks">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Noisy job? Send a subagent. But do not overdo it.</h4>
+      <div class="body">
+        <p>Test runs and log digging flood your main chat. A subagent does the reading and hands back a summary. It still spends tokens of its own, and a team of agents costs about seven times a normal session.</p>
+        <p class="proof"><q>the verbose output stays in the subagent's context while only a summary returns to your main conversation.</q> &middot; <q>Agent teams use approximately 7x more tokens than standard sessions when teammates run in plan mode</q> <a href="https://code.claude.com/docs/en/costs#delegate-verbose-operations-to-subagents">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Use the CLI you already have</h4>
+      <div class="body">
+        <p><code>gh</code>, <code>aws</code>, <code>gcloud</code> cost nothing until used. Every connected MCP server adds a listing. Run <code>/mcp</code> and switch off the ones you are not using.</p>
+        <p class="proof"><q>Tools like gh, aws, gcloud, and sentry-cli are still more context-efficient than MCP servers because they don't add any per-tool listing.</q> <a href="https://code.claude.com/docs/en/costs#reduce-mcp-server-overhead">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Quick side question? <code>/btw</code></h4>
+      <div class="body">
+        <p>It answers from what is already in the conversation and does not add the exchange to your history.</p>
+        <p class="proof"><q>Ask a side question about the current session without adding to the conversation.</q> <a href="https://code.claude.com/docs/en/commands">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Leave effort on medium</h4>
+      <div class="body">
+        <p>It is the default for a reason. For one hard turn, write <code>ultrathink</code> in the prompt instead of raising the whole session. And <code>max</code> is not &ldquo;best&rdquo;.</p>
+        <p class="proof"><q>may show diminishing returns and is prone to overthinking, so test before adopting it broadly.</q> <a href="https://code.claude.com/docs/en/model-config#cost-vs-capability-guidance">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Kill loops you forgot about</h4>
+      <div class="body">
+        <p>A <code>/loop</code> or scheduled task in an open session keeps firing while you are away, and each tick sends the whole conversation.</p>
+        <p class="proof"><q>a session-scoped scheduled task fires on its interval even while the session is idle, sending your full context each time</q> <a href="https://code.claude.com/docs/en/costs#why-usage-climbs-in-a-long-session">Claude Code docs</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">Claude Code cheat sheet</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Type this</th><th>What it does</th><th>Token effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>/clear</code></td><td>Fresh conversation</td><td><span class="save">Free</span>. Use between tasks</td></tr>
+        <tr><td><code>/compact keep the API changes</code></td><td>Summarises history, keeping what you name</td><td><span class="spend">One large request</span>, then smaller turns</td></tr>
+        <tr><td><kbd>Esc</kbd> <kbd>Esc</kbd> or <code>/rewind</code></td><td>Jump back to an earlier point</td><td><span class="save">Keeps the cache</span></td></tr>
+        <tr><td><code>/usage</code></td><td>Plan bars, what is using them, fixes</td><td>Read-only</td></tr>
+        <tr><td><code>/context</code></td><td>What is in the window now</td><td>Read-only</td></tr>
+        <tr><td><code>/btw question</code></td><td>Side question, not saved to history</td><td><span class="save">No history growth</span></td></tr>
+        <tr><td><code>/model</code>, <code>/effort</code></td><td>Change model or effort</td><td><span class="spend">Can reset the cache</span>. Do it at the start</td></tr>
+        <tr><td><code>/autocompact 500k</code></td><td>Compact earlier than the ~967K default</td><td>Smaller requests on long sessions</td></tr>
+        <tr><td><kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Cycle modes, including plan mode</td><td>Cache-safe</td></tr>
+        <tr><td><code>!npm test</code></td><td>Run a shell command yourself</td><td>Output goes straight into the chat</td></tr>
+        <tr><td><code>@src/auth.ts</code></td><td>Point at a file</td><td>Saves searching</td></tr>
+        <tr><td><code>/mcp</code></td><td>List and disable MCP servers</td><td>Fewer tool listings</td></tr>
+      </tbody>
+      <caption>Sources: <a href="https://code.claude.com/docs/en/commands">commands</a>, <a href="https://code.claude.com/docs/en/prompt-caching">prompt caching</a>, <a href="https://code.claude.com/docs/en/model-config#set-the-auto-compact-window">auto-compact</a>, <a href="https://code.claude.com/docs/en/interactive-mode">interactive mode</a>. Version checked: 2.1.325.</caption>
+    </table>
+  </div>
+
+  <h3 class="group">Tricks from the people who build it</h3>
+  <ul class="tips">
+    <li>
+      <h4>The &ldquo;conclusion only&rdquo; test</h4>
+      <div class="body">
+        <p>Not sure whether to hand something to a subagent? Ask yourself one question. If you only need the answer, delegate. If you will need the raw output again, keep it in the main chat.</p>
+        <p class="proof"><q>will I need this tool output again, or just the conclusion?</q> <a href="https://claude.com/blog/using-claude-code-session-management-and-1m-context">Thariq Shihipar, Anthropic, Apr 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Compact on your terms, with a focus</h4>
+      <div class="body">
+        <p>Auto-compact fires when the window is fullest, which is exactly when Claude summarises worst. Do it yourself at a natural break and say what to keep: <code>/compact focus on the auth refactor, drop the test debugging</code>.</p>
+        <p class="proof"><q>due to context rot, the model is at its least intelligent point when compacting.</q> <a href="https://claude.com/blog/using-claude-code-session-management-and-1m-context">Thariq Shihipar, Anthropic, Apr 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Wander off a lot? Cap the window</h4>
+      <div class="body">
+        <p>Coming back to a huge stale session re-reads all of it at full price. A smaller window means a smaller bill for that mistake: <code>/autocompact 400k</code>.</p>
+        <p class="proof"><q>if you leave your computer for over an hour then continue a stale session, it's often a full cache miss.</q> <a href="https://github.com/anthropics/claude-code/issues/45756">Boris Cherny, Claude Code team, Apr 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Plugin hoarding costs you</h4>
+      <div class="body">
+        <p>Every installed skill adds its description to every turn, and plugins can start background agents. If usage looks odd, check <code>/usage</code> and prune what you do not use.</p>
+        <p class="proof"><q>People pulling in a large number of skills, or running many agents or background automations &hellip; This was the case for a surprisingly large number of users</q> <a href="https://github.com/anthropics/claude-code/issues/45756">Boris Cherny, Apr 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Let it interview you, then build in a clean session</h4>
+      <div class="body">
+        <p>For anything fuzzy: &ldquo;Interview me until you could write the spec, then write it to SPEC.md.&rdquo; Then start fresh and point at the file. The build session starts small and knows what done means.</p>
+        <p class="proof"><q>Once SPEC.md exists, start a fresh session to build from it, so the build begins with a clean context and a written definition of done.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Turn the dial before you change the model</h4>
+      <div class="body">
+        <p>Answer not good enough? Raise effort one notch first. Only move up a model if it had the context, tried, and still got it wrong. Pushing Sonnet to Max all day means you wanted Opus.</p>
+        <p class="proof"><q>try a higher effort first before moving up a model.</q> <a href="https://claude.com/resources/articles/using-claude-opus-5-5-as-your-daily-driver-for-knowledge-work">Anthropic, 12 Nov 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Make your tests quiet and quick</h4>
+      <div class="body">
+        <p>Claude reads every byte your test runner prints. Print failures only, put the reason on the same line as <code>ERROR</code>, and give it a fast mode that runs a sample.</p>
+        <p class="proof"><q>The test harness should not print thousands of useless bytes.</q> <a href="https://www.anthropic.com/engineering/building-c-compiler">Nicholas Carlini, Anthropic, Feb 2026</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Get a second opinion from a fresh pair of eyes</h4>
+      <div class="body">
+        <p>Asking the same chat &ldquo;are you sure?&rdquo; mostly gets you agreement. <code>/code-review</code> uses a reviewer that never saw the conversation.</p>
+        <p class="proof"><q>It isn't swayed by the reasoning that produced the code.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">Add-ons worth knowing</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Tool</th><th>What it does</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Built in</td><td><code>/usage</code>, <code>/context</code>, <code>/insights</code>, status line</td><td>Start here. Covers most tracking needs</td></tr>
+        <tr><td><a href="https://github.com/ryoppippi/ccusage">ccusage</a></td><td>Reads local logs and reports tokens and cost by day, session or 5-hour block. <code>npx ccusage@latest</code></td><td>19.4k stars. Read-only</td></tr>
+        <tr><td><a href="https://github.com/sirmalloc/ccstatusline">ccstatusline</a></td><td>Status line showing context %, session cost, block timer</td><td>13.6k stars</td></tr>
+        <tr><td><a href="https://github.com/rtk-ai/rtk">RTK</a></td><td>Hook that rewrites shell commands to shrink their output</td><td>Savings are self-reported on command output, not on your bill</td></tr>
+      </tbody>
+      <caption>Third-party tools are not audited by Anthropic. Hooks that rewrite commands run with your permissions, so read them first. Star counts as shown on 16 Nov 2026.</caption>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 3. DEVELOPER ============ -->
+<section class="part" id="developer">
+  <p class="eyebrow">Under the hood</p>
+  <h2>For developers</h2>
+  <p class="intro">Optimise cost per completed task, not cost per token. Free wins first (caching, trimming, batch), tradeoffs after (effort, model). Numbers below are Anthropic's own measurements, which it labels <q>directional, not guarantees</q>.</p>
+
+  <h3 class="group">Anthropic's lever order, with measured savings</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>#</th><th>Lever</th><th>Measured saving</th><th>Quality cost</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>Prompt caching</td><td><span class="save">4.8&ndash;7.2&times; cheaper</span> on a research agent; 83&ndash;86% on a triage agent</td><td>None</td></tr>
+        <tr><td class="num">2</td><td>1-hour cache TTL</td><td>5-minute default cost 54% more when 1 turn in 10 follows a pause</td><td>None</td></tr>
+        <tr><td class="num">3</td><td>Trim input</td><td><span class="save">A further 21&ndash;26%</span></td><td>None</td></tr>
+        <tr><td class="num">4</td><td>Tool search</td><td><span class="save">45%</span> with 500 tools attached; 20% from deferring a GitHub MCP toolset</td><td>None</td></tr>
+        <tr><td class="num">5</td><td>Data files via code execution</td><td><span class="save">92%</span> on a 25-question data task</td><td>Gain: 25/25 correct, up from 7</td></tr>
+        <tr><td class="num">6</td><td>Batch API</td><td><span class="save">50%</span> on every token</td><td>None. Results within 24 h</td></tr>
+        <tr><td class="num">7</td><td>Audit prompts for the current model</td><td><span class="save">14%</span> on both upgrades tested</td><td>None; a gain on one</td></tr>
+        <tr><td class="num">8</td><td>Upgrade the model</td><td>Up to 40% typical; <span class="save">up to 87%</span> per solved coding task</td><td>None on coding</td></tr>
+        <tr><td class="num">9</td><td>Lower effort</td><td><code>medium</code> 30&ndash;52% under <code>high</code>; <code>low</code> about two thirds under</td><td><span class="spend">Up to 34 points</span>, task-dependent</td></tr>
+        <tr><td class="num">10</td><td>Re-run failures at higher effort</td><td><span class="save">About 40%</span> under all-<code>high</code></td><td>None</td></tr>
+        <tr><td class="num">11</td><td>Ask for shorter answers</td><td><span class="save">About 13%</span> (39% fewer output tokens)</td><td>None</td></tr>
+        <tr><td class="num">&ndash;</td><td>Lower <code>max_tokens</code></td><td><span class="spend">No saving</span></td><td>Worse: truncated attempts</td></tr>
+        <tr><td class="num">&ndash;</td><td>Advisor tool</td><td><span class="spend">No saving</span>: about 2.1&times; cost</td><td>Small gain, maybe noise</td></tr>
+        <tr><td class="num">&ndash;</td><td>Fast mode</td><td><span class="spend">No saving</span>: 2&times; token price</td><td>None. Up to 2.5&times; faster output</td></tr>
+      </tbody>
+      <caption>Source: <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Optimizing for cost and intelligence</a>, lever table. Anthropic-internal runs.</caption>
+    </table>
+  </div>
+
+  <h3 class="group">Current prices, USD per million tokens</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Model</th><th>ID</th><th class="num">Input</th><th class="num">Cache read</th><th class="num">Output</th><th class="num">Batch in / out</th></tr></thead>
+      <tbody>
+        <tr><td>Fable 5.2</td><td><code>claude-fable-5-2</code></td><td class="num">$8</td><td class="num">$0.20</td><td class="num">$40</td><td class="num">$4 / $20</td></tr>
+        <tr><td>Opus 5.5</td><td><code>claude-opus-5-5</code></td><td class="num">$4</td><td class="num">$0.20</td><td class="num">$20</td><td class="num">$2 / $10</td></tr>
+        <tr><td>Sonnet 5.5</td><td><code>claude-sonnet-5-5</code></td><td class="num">$2</td><td class="num">$0.10</td><td class="num">$10</td><td class="num">$1 / $5</td></tr>
+        <tr><td>Haiku 5.5 (prompt &le; 100K)</td><td><code>claude-haiku-5-5</code></td><td class="num">$0.10</td><td class="num">$0.01</td><td class="num">$0.50</td><td class="num">$0.05 / $0.25</td></tr>
+        <tr><td>Haiku 5.5 (prompt &gt; 100K)</td><td><code>claude-haiku-5-5</code></td><td class="num">$0.50</td><td class="num">$0.05</td><td class="num">$2.50</td><td class="num">$0.25 / $1.25</td></tr>
+      </tbody>
+      <caption>Cache writes: 1.25&times; input (5 min) or 2&times; (1 h). 1M context at standard price except the Haiku step. US-only inference 1.1&times;. Source: <a href="https://platform.claude.com/docs/en/about-claude/pricing">pricing</a>.</caption>
+    </table>
+  </div>
+
+  <h3 class="group">Prompt caching</h3>
+  <ul class="tips">
+    <li>
+      <h4>Turn it on first</h4>
+      <div class="body">
+        <p>One top-level <code>cache_control</code> field. Prefix order is <code>tools</code> &rarr; <code>system</code> &rarr; <code>messages</code>; a change at any level invalidates it and everything after. Minimum prefix is 512 tokens on current models, and shorter prompts silently skip caching.</p>
+        <p class="proof"><q>Turn on prompt caching before any other lever.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a> &middot; <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Caching docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Keep the prefix byte-stable</h4>
+      <div class="body">
+        <p>No timestamps, request IDs or unsorted JSON above the breakpoint. Put per-request text at the end of the newest user turn.</p>
+        <p class="proof"><q>a 25-token status line at the front of the system prompt made each request write the whole conversation</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Append, never edit</h4>
+      <div class="body">
+        <p>New instruction mid-conversation? Append a <code>{"role": "system"}</code> message to <code>messages</code> instead of rewriting top-level <code>system</code>. Hold model, tools and top-level effort fixed for the session.</p>
+        <p class="proof"><q>Editing the system prompt cost about 25 to 50 times what the same text cost as a mid-conversation system message.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Choose the TTL from your gaps</h4>
+      <div class="body">
+        <p>5 minutes refreshes free on every hit, so it suits steady traffic. Use 1 hour once about 1 turn in 20 follows a 5&ndash;60 minute pause. Break-even is one read at 5 min, two reads at 1 h. Fanning out in parallel? Wait for the first response to start, or the others all miss.</p>
+        <p class="proof"><q>a cache entry only becomes available after the first response starts.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Caching docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Verify from <code>usage</code>, not from the code</h4>
+      <div class="body">
+        <p>Cache reads also do not count toward your input-tokens-per-minute limit, so a high hit rate raises throughput too.</p>
+        <p class="proof"><q>agent loops read a median 84% of their input from the cache &hellip; Below about 80%, look for something breaking the cache</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a> &middot; <a href="https://platform.claude.com/docs/en/api/rate-limits">Rate limits</a></p>
+      </div>
+    </li>
+  </ul>
+<div class="scroll" style="border:0;background:none;margin-top:1rem">
+<pre><code>const stream = client.messages.stream({
+  model,                                  // fixed for the whole conversation
+  max_tokens: 64000,                      // a backstop, not a budget
+  cache_control: { type: "ephemeral" },   // automatic caching
+  system: STABLE_SYSTEM,                  // no timestamps or IDs in here
+  messages,                               // append-only
+});
+const { usage } = await stream.finalMessage();
+// Healthy loop: cache_read_input_tokens far above input_tokens.
+console.log(usage.input_tokens, usage.cache_creation_input_tokens,
+            usage.cache_read_input_tokens, usage.output_tokens);</code></pre>
+</div>
+
+  <h3 class="group">Output, effort and thinking</h3>
+  <ul class="tips">
+    <li>
+      <h4>Output is the expensive side</h4>
+      <div class="body">
+        <p>Output costs 5&times; input on every current model, and in a loop each token written is re-read on every later turn. Specify the shape you will read. In Anthropic's test a one-line format cost $0.49 per run against $1.40 for a memo, at the same accuracy band.</p>
+        <p class="proof"><q>Ask for the answer you will read, not the one that looks thorough.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Sweep effort before you change model</h4>
+      <div class="body">
+        <p>Opus 5.5 on a SWE-bench Pro subset: <code>low</code> 87.4% at $0.11, <code>medium</code> 92.8% at $0.21, <code>high</code> 95.3% at $0.29, <code>xhigh</code> 96.7% at $0.74 per task. If outputs are checkable, run <code>low</code> and re-run only failures at <code>high</code>: about 97% for about $0.17.</p>
+        <p class="proof"><q>Tuning effort is often a better lever than switching models.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/choosing-a-model">Choosing a model</a> &middot; <a href="https://platform.claude.com/docs/en/build-with-claude/effort">Effort docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Thinking is billed output, even when hidden</h4>
+      <div class="body">
+        <p>It cannot be disabled on Fable or Opus 5.5, and <code>budget_tokens</code> returns a 400 on current models. Effort is the control. Read spend from <code>usage.output_tokens_details.thinking_tokens</code>.</p>
+        <p class="proof"><q>the tokens Claude spends reasoning are billed as output tokens, even when the thinking text isn't returned to you</q> <a href="https://platform.claude.com/docs/en/build-with-claude/thinking">Thinking docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Set <code>max_tokens</code> to 64,000 and stream</h4>
+      <div class="body">
+        <p>At 16,384, Fable 5.2 had 85% of attempts cut off and solved 20.3%, at $27.96 per solved task. At 64,000, 2% were cut off and it solved 77.4%, at $24.42. Treat <code>stop_reason: "max_tokens"</code> as a failure. A high cap has no rate-limit penalty.</p>
+        <p class="proof"><q>The turns that needed the room are discarded and still billed.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Delete instructions written for older models</h4>
+      <div class="body">
+        <p>&ldquo;Verify twice&rdquo;, &ldquo;be maximally thorough&rdquo;, ALL-CAPS emphasis. Prompts carried from Opus 4.8 to Opus 5 cost 36% more per ticket with no accuracy change until audited.</p>
+        <p class="proof"><q>A newer model follows such instructions to the letter, producing extra tool rounds and extra writing that you pay for with no gain in accuracy</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">Tools, files and context</h3>
+  <ul class="tips">
+    <li>
+      <h4>Defer tool definitions</h4>
+      <div class="body">
+        <p>From about 10 tools or 10K tokens of schemas, add tool search with <code>defer_loading: true</code> and keep your 3&ndash;5 most-used tools loaded. It appends rather than swaps, so the cache survives.</p>
+        <p class="proof"><q>A typical multiserver setup (GitHub, Slack, Sentry, Grafana, and Splunk) can consume ~55k tokens in definitions before Claude does any work. Tool search typically reduces this by over 85 percent</q> <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool">Tool search docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Let code call the tools</h4>
+      <div class="body">
+        <p>Programmatic tool calling keeps intermediate results out of context. It pays on chains and fan-outs, not on single sequential calls (there it cost about 8% more).</p>
+        <p class="proof"><q>improved performance by an average of 11 percent while using 24 percent fewer input tokens</q> <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling">PTC docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Make tool results small</h4>
+      <div class="body">
+        <p>Paginate, filter, truncate. Offer a <code>response_format</code> of <code>concise</code> or <code>detailed</code>. Prefer <code>get_policy(id)</code> to <code>get_all_policies()</code>.</p>
+        <p class="proof"><q>we use ~&#8531; of the tokens with "concise" tool responses.</q> <a href="https://www.anthropic.com/engineering/writing-tools-for-agents">Anthropic engineering</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Upload data, do not paste it</h4>
+      <div class="body">
+        <p>Files API plus code execution: the model queries the file in a sandbox and only the answer enters context.</p>
+        <p class="proof"><q>Pasted into the prompt, the table is about 91,000 input tokens on every request, and Claude Sonnet 5 answered 7 of 25 questions correctly. Uploaded, with code execution, it answered all 25, and the run cost about a twelfth as much.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Downscale images, count PDF pages</h4>
+      <div class="body">
+        <p>Image tokens = &lceil;width / 28&rceil; &times; &lceil;height / 28&rceil;. A 1280&times;720 screenshot is about 1,200 tokens; a full-resolution one on a 4.7+ model can reach 4,784. PDFs run 1,500&ndash;3,000 tokens per page.</p>
+        <p class="proof"><q>downsample images before sending to control token costs.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/vision">Vision docs</a> &middot; <a href="https://platform.claude.com/docs/en/build-with-claude/pdf-support">PDF docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Compaction for long sessions only</h4>
+      <div class="body">
+        <p>Server-side compaction saved 32% on a long run and nothing on a short one. Context editing is for making room, not saving money: it added 73% on the short run because every clear rewrites the cache. Do not prune history client-side on current models; it invalidates thinking blocks.</p>
+        <p class="proof"><q>The context levers only pay on a session long enough to need them</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>One model before two</h4>
+      <div class="body">
+        <p>An orchestrator with cheaper subagents cost about a third less only on work larger than one context window. Elsewhere, the same model at lower effort won.</p>
+        <p class="proof"><q>Start with the simplest approach that works, and add complexity only when evidence supports it.</q> <a href="https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them">Anthropic, Jan 2026</a> &middot; <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">Picking a model</h3>
+  <ul class="tips">
+    <li>
+      <h4>Default to Opus 5.5 at medium</h4>
+      <div class="body">
+        <p>Try Haiku 5.5 first for high-volume work with checkable outputs. Reach for Fable 5.2 when evals on Opus 5.5 at higher effort still fall short.</p>
+        <p class="proof"><q>For most agent workloads, start with Claude Opus 5.5 at its default effort (medium).</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Watch the Haiku 100K step</h4>
+      <div class="body">
+        <p>Past 100,000 prompt tokens every token of the request costs 5&times;, cached tokens included in the count. A compaction trigger of 90,000 cost 70% less per request than the 150,000 default.</p>
+        <p class="proof"><q>Past that, every token of the request costs 5 times as much, output included.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Re-count after a model change</h4>
+      <div class="body">
+        <p>Models from 4.7 on use a tokenizer that yields about 30% more tokens for the same text. <code>count_tokens</code> is free; call it with the target model's ID.</p>
+        <p class="proof"><q>This tokenizer produces approximately 30% more tokens for the same text.</q> <a href="https://platform.claude.com/docs/en/about-claude/pricing">Pricing</a> &middot; <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">Token counting</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Batch anything nobody is waiting on</h4>
+      <div class="body">
+        <p>50% off input and output, stacks with caching (hits are best-effort, so use the 1-hour TTL for shared context). Up to 100,000 requests or 256 MB per batch.</p>
+        <p class="proof"><q>most batches finishing in less than 1 hour while reducing costs by 50 percent</q> <a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing">Batch docs</a></p>
+      </div>
+    </li>
+  </ul>
+
+  <h3 class="group">Claude Code, scripted</h3>
+  <ul class="tips">
+    <li>
+      <h4>Cap headless runs</h4>
+      <div class="body">
+        <p><code>claude -p "&hellip;" --max-turns 10 --max-budget-usd 2</code> for CI and scripts. <code>--bare</code> skips hooks, skills, plugins, MCP servers and CLAUDE.md when you want the leanest possible run.</p>
+        <p class="proof"><q>claude -p "prompt" runs once and exits, which is how Claude Code ends up in CI jobs, git hooks, and shell loops.</q> <a href="https://code.claude.com/docs/en/best-practices#automate-and-scale">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Filter output with a hook</h4>
+      <div class="body">
+        <p>A <code>PreToolUse</code> hook can rewrite a test command to pipe through <code>tail -n 100</code> before Claude ever sees the output. The docs ship a ready-made script.</p>
+        <p class="proof"><q>a hook can grep for ERROR and return only matching lines, reducing context from tens of thousands of tokens to hundreds.</q> <a href="https://code.claude.com/docs/en/costs#offload-processing-to-hooks-and-skills">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Put subagents on a cheaper model</h4>
+      <div class="body">
+        <p>Set <code>model: haiku</code> in a subagent's frontmatter. Defining your own agent named <code>Explore</code> overrides the built-in, so exploration can run on Haiku too.</p>
+        <p class="proof"><q>For simple subagent tasks, specify model: haiku in your subagent configuration.</q> <a href="https://code.claude.com/docs/en/costs#choose-the-right-model">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>On an API key, set the cache to one hour</h4>
+      <div class="body">
+        <p>Subscriptions get a 1-hour cache for the main conversation; API keys and cloud providers get 5 minutes. If you pause between turns, set <code>"promptCacheTtl": "1h"</code> in settings (v2.1.242+).</p>
+        <p class="proof"><a href="https://code.claude.com/docs/en/prompt-caching#which-ttl-each-request-gets">Claude Code docs: which TTL each request gets</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Install a code intelligence plugin</h4>
+      <div class="body">
+        <p>For typed languages, language-server navigation replaces search-and-read loops.</p>
+        <p class="proof"><q>A single "go to definition" call replaces what might otherwise be a grep followed by reading multiple candidate files.</q> <a href="https://code.claude.com/docs/en/costs#install-code-intelligence-plugins-for-typed-languages">Claude Code docs</a></p>
+      </div>
+    </li>
+    <li>
+      <h4>Know the baseline</h4>
+      <div class="body">
+        <p>Put <code>context_window.used_percentage</code>, <code>cost.total_cost_usd</code> and <code>prompt_cache</code> in your status line and compare against the fleet average.</p>
+        <p class="proof"><q>the average cost is around $13 per developer per active day and $150-250 per developer per month, with costs remaining below $30 per active day for 90% of users.</q> <a href="https://code.claude.com/docs/en/costs">Claude Code docs</a></p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- ============ MYTHS ============ -->
+<section class="part" id="myths">
+  <p class="eyebrow">Skip these</p>
+  <h2>Popular advice that the evidence does not support</h2>
+  <ul class="myths">
+    <li><s>Set a low max_tokens to save money.</s>
+      <span class="fix">The model cannot see the cap; cut-off answers are billed and thrown away. <span class="proof"><q>lowering it does not make the model economize.</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></span></span></li>
+    <li><s>Max effort gives the best result.</s>
+      <span class="fix">On Opus 5.5, <code>xhigh</code> scored 1.4 points above <code>high</code> for 2.5&times; the cost per task ($0.74 vs $0.29). <span class="proof"><a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></span></span></li>
+    <li><s>The cheapest model per token is the cheapest to use.</s>
+      <span class="fix">Count cost per finished task. Upgrading Sonnet 5 to 5.5 cost 87% less per solved coding task. <span class="proof"><q>Compare models on cost per completed task, not per token</q> <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></span></span></li>
+    <li><s>More agents means better answers.</s>
+      <span class="fix">They cost several times more, and delegating is not the same as improving. <span class="proof"><q>multi-agent implementations typically use 3-10x more tokens than single-agent approaches for equivalent tasks</q> <a href="https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them">Anthropic, Jan 2026</a> &middot; <q>Handing the same task to a subagent doesn't make the answer any better.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a></span></span></li>
+    <li><s>A bigger context window means I can stop managing context.</s>
+      <span class="fix">Quality drops as the window fills, and you pay to re-read all of it. <span class="proof"><q>As token count grows, accuracy and recall degrade, a phenomenon known as context rot.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">API docs</a></span></span></li>
+    <li><s>Tell Claude in the prompt to think less.</s>
+      <span class="fix">Use the effort setting. <span class="proof"><q>Asking Claude Sonnet 5.5 in the system prompt to think less doesn't reliably reduce its thinking.</q> <a href="https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost">API docs</a></span></span></li>
+    <li><s>Add a .claudeignore to hide files.</s>
+      <span class="fix">Claude Code ignores it. Use <code>Read(./secrets/**)</code> deny rules. <span class="proof"><q>If your project has a .claudeignore file, it has no effect</q> <a href="https://code.claude.com/docs/en/permissions">Claude Code docs</a></span></span></li>
+    <li><s>Split CLAUDE.md into @imports to make it cheaper.</s>
+      <span class="fix">Imports load with the file that imports them. <span class="proof"><q>don't reduce its context cost</q> <a href="https://code.claude.com/docs/en/memory#write-effective-instructions">Claude Code docs</a></span></span></li>
+    <li><s>Keep &ldquo;double-check your work&rdquo;, &ldquo;be thorough&rdquo; and &ldquo;don't be lazy&rdquo; in every prompt.</s>
+      <span class="fix">Current models obey literally and do extra rounds. Removing &ldquo;verify twice&rdquo; cut cost per ticket by a third in Anthropic's test, with no accuracy loss. <span class="proof"><q>lines like that are more likely to cause over-work than fix a stall.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a>, <a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">Cost guide</a></span></span></li>
+    <li><s>Write &ldquo;think hard&rdquo; or &ldquo;think harder&rdquo; to get more reasoning.</s>
+      <span class="fix">Those are plain text now. Only <code>ultrathink</code> is a keyword, and only in Claude Code. Everywhere else, use the effort setting. <span class="proof"><q>passes other phrases such as "think", "think hard", and "think more" through as ordinary prompt text</q> <a href="https://code.claude.com/docs/en/model-config">Claude Code docs</a></span></span></li>
+    <li><s>Put IMPORTANT and YOU MUST in capitals so Claude listens.</s>
+      <span class="fix">Say it plainly. For a rule that cannot bend, use a hook or a deny rule. <span class="proof"><q>piling on emphasis mostly makes Claude over-apply the rule.</q> <a href="https://code.claude.com/docs/en/best-practices">Claude Code docs</a></span></span></li>
+    <li><s>Make Claude talk like a caveman to save 65% of tokens.</s>
+      <span class="fix">&ldquo;Answer concisely.&rdquo; does nearly all of it. The most popular such skill's own benchmark: 6,983 output tokens with no instruction, 4,334 with &ldquo;Answer concisely.&rdquo;, 4,119 with the skill, and the skill adds about 1,160 input tokens. <span class="proof"><q>"Be concise" is the real baseline; new models already know it.</q> <a href="https://github.com/JuliusBrussee/caveman">caveman README</a></span></span></li>
+    <li><s>Switch to a cheaper model halfway through for the easy parts.</s>
+      <span class="fix">The switch re-reads your whole history at full price. Use a subagent on Haiku, or a new session. <span class="proof"><a href="https://code.claude.com/docs/en/prompt-caching#switching-models">Claude Code docs</a></span></span></li>
+    <li><s>MCP servers always flood your context.</s>
+      <span class="fix">True in 2025, outdated in Claude Code now. A plain CLI is still leaner. <span class="proof"><q>MCP tool definitions are deferred by default, so only tool names and server instructions enter context until Claude uses a specific tool.</q> <a href="https://code.claude.com/docs/en/costs#reduce-mcp-server-overhead">Claude Code docs</a></span></span></li>
+    <li><s>Saying please and thank you burns your limit.</s>
+      <span class="fix">No measurement found on any official page. A few words are noise next to the conversation being re-read. <span class="proof"><q>a one-line question in a session that has been open all day still draws usage for the whole conversation.</q> <a href="https://code.claude.com/docs/en/costs#why-usage-climbs-in-a-long-session">Claude Code docs</a></span></span></li>
+  </ul>
+</section>
+
+<footer class="end">
+  <h2>How this was checked</h2>
+  <p>Every claim was read from the live page on 16 November 2026 and is quoted or linked beside the tip. Benchmarks are Anthropic's own and may not match your workload. Plans, limits and prices change; follow the link before relying on a number.</p>
+  <p>Main sources:</p>
+  <ul>
+    <li><a href="https://support.claude.com/en/articles/9797557-usage-limit-best-practices">Help Center: usage limit best practices</a> and <a href="https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work">how limits work</a></li>
+    <li><a href="https://code.claude.com/docs/en/costs">Claude Code: manage costs</a>, <a href="https://code.claude.com/docs/en/prompt-caching">prompt caching</a>, <a href="https://code.claude.com/docs/en/best-practices">best practices</a></li>
+    <li><a href="https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence">API: optimizing for cost and intelligence</a>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">pricing</a>, <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">prompt caching</a></li>
+    <li><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices">Prompting best practices</a></li>
+  </ul>
+  <p>Not reachable from the research environment, so not used: Simon Willison's blog, Hacker News, Reddit, X and arXiv. Independent write-ups there were left out because their numbers could not be checked.</p>
+  <p>Looked for and not found on any official page: published message counts per plan; a live Styles article (it now redirects to Skills); the <code>#</code> memory shortcut in Claude Code; the old &ldquo;token-efficient tool use&rdquo; API page.</p>
+</footer>
+</div>
